@@ -45,7 +45,7 @@ void * read_file_and_send_result(void *arg)
     queue_front = (queue_front + 1) % 1000;
     pthread_mutex_unlock(&queue_mutex);
     char file_content[512] = {'0'};
-    char new_content[512] = {'\0'};
+    char new_content[512] = {'0'};
 
     printf("Start\t%d\t%ld\n", request_id, pthread_self());
 
@@ -99,26 +99,19 @@ void * read_file_and_send_result(void *arg)
     strcat(strcat(strcat(diff_command, output_file_name), " >"), diff_file_name);
     //printf("%s\n%s\n%s\n", compilation_command, execute_command, diff_command);
 
-    // fprintf(file, "WIP\n");
-    // fclose(file);
     sleep(15);
     memset(file_content, 0, 1024);
     memset(new_content, 0, 1024);
     FILE *file = fopen(status_file_name, "r");
     fgets(file_content, sizeof(file_content), file);
- 
     memset(file_content, 0, 1024);
-
-    fgets(file_content, sizeof(file_content), file);
-    strcat(new_content, "WIP\n");
-    strcat(new_content, file_content);
+    int number;
+    fscanf(file, "%d", &number);
     fclose(file);
-    // printf("%s\n", new_content);
-    int fds = open(status_file_name, O_WRONLY);
-    // printf("%s\n", new_content);
-    write(fds, new_content, sizeof(new_content));
-    close(fds);
-    
+    file = fopen(status_file_name, "w");
+    fprintf(file, "WIP\n");
+    fprintf(file, "%d\n", number);
+    fclose(file);
     //Compile and Run
     char message[50] = {0};
 
@@ -133,7 +126,7 @@ void * read_file_and_send_result(void *arg)
       close(fdc);
       fclose(file);
       strcat(strcat(strcat(remove_command, c_file_name), " "),compilation_file_name);
-      //system(remove_command);
+      system(remove_command);
     }
     else if(system(execute_command))
     {
@@ -167,17 +160,16 @@ void * read_file_and_send_result(void *arg)
       fprintf(file, "Pass\n");
       strcat(strcat(strcat(strcat(strcat(strcat(strcat(strcat(strcat(strcat(strcat(remove_command, c_file_name), " "),compilation_file_name), " "), executable_file_name), " "), runtime_error_file_name), " "), output_file_name), " "), diff_file_name);
       fclose(file);
-      //system(remove_command);
+      system(remove_command);
     }
     sleep(10);
 
     memset(file_content, 0, 1024);
     memset(new_content, 0, 1024);
-    fds = open(status_file_name, O_RDONLY);
+    int fds = open(status_file_name, O_RDONLY);
     int ch_read = read(fds, file_content, sizeof(file_content));
   
     strcat(new_content, "DONE\n");
-    // printf("%s\n", new_content);
     file_content[0] = ' ';
     file_content[1] = ' ';
     file_content[2] = ' ';
@@ -281,11 +273,9 @@ int main(int argc, char *argv[]) {
       }
       pthread_mutex_unlock(&queue_mutex);
 
-      char queue_rear_str[10];
-      sprintf(queue_rear_str, "%d", queue_rear);
       FILE *file = fopen(status_file_name, "w");
       fprintf(file, "ACCEPTED\n");
-      fwrite(queue_rear_str, 1, 10, file);
+      fprintf(file, "%d\n", queue_rear);
       fclose(file);
 
       memset(response, 0, 1024);
@@ -329,7 +319,6 @@ int main(int argc, char *argv[]) {
         strcat(response, "\n");
         strcat(response, temp_response);
 
- 
       }
       fclose(file);
       write(newsockfd, response, sizeof(response));
